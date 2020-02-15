@@ -16,12 +16,17 @@ cpx.pixels.brightness = 0.4
 cpx.pixels.auto_write = True
 
 
-def animation(now, start):
+def animation(now, start, ax, ay, az):
 
     # Red-comet rainbow swirl!
     for p in range(10):
-        cpx.pixels[p] = (0, 0, 0)
-        cpx.pixels[p] = (int(now) % 255, p * 25, 255 - 25 * p)
+        #  cpx.pixels[p] = (0, 0, 0)
+        if p <= 2:
+            cpx.pixels[p] = (abs(int(ax * 10)), 0, 0)
+        if p >= 3 and p <= 5:
+            cpx.pixels[p] = (0, abs(int(ay * 10)), 0)
+        if p >= 6 and p <= 8:
+            cpx.pixels[p] = (0, 0, abs(int(az * 10)))
 
 
 color_index = 0
@@ -33,8 +38,6 @@ dx, dy, dz = 0, 0, 0
 start = time.monotonic()
 while True:
     now = time.monotonic()
-    print(int(now) % 255)
-    animation(now, start)
     # If the switch is to the left, it returns True!
     cpx.red_led = cpx.switch
 
@@ -42,6 +45,7 @@ while True:
     ax, ay, az = cpx.acceleration
     dx, dy, dz = (ax - bx), (ay - by), (az - bz)
     print(now, ax, ay, az, dx, dy, dz)
+    animation(now, start, ax, ay, az)
 
     # Press the buttons to play sounds!
     if cpx.button_a:
