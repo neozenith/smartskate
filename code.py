@@ -10,10 +10,27 @@ TONE_PIANO = True
 # Set this as a float from 0 to 1 to change the brightness.
 # The decimal represents a percentage.
 # So, 0.3 means 30% brightness!
-cpx.pixels.brightness = 0.4
+cpx.pixels.brightness = 1.0
 
 # Changes to NeoPixel state will not happen without explicitly calling show()
 cpx.pixels.auto_write = True
+
+
+def log_values(now, ax, ay, az, dx, dy, dz):
+    try:
+        with open("/data.csv", "a") as fp:
+            # do the C-to-F conversion here if you would like
+            fp.write("%f,%f,%f,%f,%f,%f,%f\n" % (now, ax, ay, az, dx, dy, dz))
+            fp.flush()
+            cpx.red_led = not cpx.red_led
+    except OSError as e:
+        delay = 1
+        if e.args[0] == 28:
+            delay = 2
+        while True:
+            cpx.red_led = not cpx.red_led
+            print(e)
+            time.sleep(delay)
 
 
 def animation(now, start, ax, ay, az):
@@ -45,6 +62,7 @@ while True:
     ax, ay, az = cpx.acceleration
     dx, dy, dz = (ax - bx), (ay - by), (az - bz)
     print(now, ax, ay, az, dx, dy, dz)
+    log_values(now, ax, ay, az, dx, dy, dz)
     animation(now, start, ax, ay, az)
 
     # Press the buttons to play sounds!
