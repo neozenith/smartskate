@@ -67,7 +67,9 @@ while True:
     ax, ay, az = cpx.acceleration
     dx, dy, dz = (ax - bx), (ay - by), (az - bz)
     print(now, ax, ay, az, dx, dy, dz)
-    log_values(now, ax, ay, az, dx, dy, dz)
+    if not cpx.switch:
+        cpx.red_led = not cpx.switch
+        log_values(now, ax, ay, az, dx, dy, dz)
     animation(now, start, dx, dy, dz)
 
     # Press the buttons to play sounds!
