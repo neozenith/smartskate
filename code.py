@@ -1,5 +1,6 @@
 """For a detailed guide on all the features of the Circuit Playground Express (cpx) library:
 https://adafru.it/cp-made-easy-on-cpx"""
+import math
 import time
 import microcontroller
 from adafruit_circuitplayground.express import cpx
@@ -34,16 +35,20 @@ def log_values(now, ax, ay, az, dx, dy, dz):
 
 
 def animation(now, start, ax, ay, az):
+    a = math.sqrt(ax * ax + ay * ay + az * az)
+    a = a / 9.802
 
-    # Red-comet rainbow swirl!
-    for p in range(10):
-        #  cpx.pixels[p] = (0, 0, 0)
-        if p <= 2:
-            cpx.pixels[p] = (abs(int(ax * 10)), 0, 0)
-        if p >= 3 and p <= 5:
-            cpx.pixels[p] = (0, abs(int(ay * 10)), 0)
-        if p >= 6 and p <= 8:
-            cpx.pixels[p] = (0, 0, abs(int(az * 10)))
+    if a > 0:
+        log2A = math.log(a, 2)
+        # Transform from levels -3:4 to 0:10
+        level = int((log2A + 3) * 10 / 7)
+        lerp = level / 10.0
+        #  print(level, lerp, a)
+        for p in range(10):
+            if p <= level:
+                cpx.pixels[p] = (int(lerp * 255), int((1.0 - lerp) * 255), 0)
+            else:
+                cpx.pixels[p] = (0, 0, 0)
 
 
 color_index = 0
@@ -63,7 +68,7 @@ while True:
     dx, dy, dz = (ax - bx), (ay - by), (az - bz)
     print(now, ax, ay, az, dx, dy, dz)
     log_values(now, ax, ay, az, dx, dy, dz)
-    animation(now, start, ax, ay, az)
+    animation(now, start, dx, dy, dz)
 
     # Press the buttons to play sounds!
     if cpx.button_a:
