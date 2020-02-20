@@ -34,19 +34,31 @@ def log_values(now, ax, ay, az, dx, dy, dz):
             time.sleep(delay)
 
 
-def animation(now, start, ax, ay, az):
-    a = math.sqrt(ax * ax + ay * ay + az * az)
-    a = a / 9.802
+def magnitude(ax, ay, az):
+    return math.sqrt(ax * ax + ay * ay + az * az) / 9.802
+
+
+def light_level(a):
+    level = 0
+    lerp = 0
 
     if a > 0:
         log2A = math.log(a, 2)
         # Transform from levels -3:4 to 0:10
         level = int((log2A + 3) * 10 / 7)
         lerp = level / 10.0
-        #  print(level, lerp, a)
+    return level, lerp
+
+
+def animate_level(a, maxA):
+    if a > 0:
+        level, lerp = light_level(a)
+        max_level, max_lerp = light_level(maxA)
         for p in range(10):
-            if p <= level:
-                cpx.pixels[p] = (int(lerp * 255), int((1.0 - lerp) * 255), 0)
+            if p == max_level:
+                cpx.pixels[p] = (int(max_lerp * 255), max(0, int((1.0 - 1.5 * max_lerp) * 255)), 0)
+            elif p <= level:
+                cpx.pixels[p] = (int(lerp * 255), max(0, int((1.0 - 1.5 * lerp) * 255)), 0)
             else:
                 cpx.pixels[p] = (0, 0, 0)
 
@@ -56,6 +68,7 @@ pixel_number = 0
 ax, ay, az = 0, 0, 0
 bx, by, bz = 0, 0, 0
 dx, dy, dz = 0, 0, 0
+max_a = (0, 0)
 # time.monotonic() allows for non-blocking LED animations!
 start = time.monotonic()
 while True:
@@ -66,14 +79,18 @@ while True:
     bx, by, bz = ax, ay, az
     ax, ay, az = cpx.acceleration
     dx, dy, dz = (ax - bx), (ay - by), (az - bz)
+
     print(now, ax, ay, az, dx, dy, dz)
+
     if not cpx.switch:
         cpx.red_led = not cpx.switch
         log_values(now, ax, ay, az, dx, dy, dz)
-    animation(now, start, dx, dy, dz)
 
-    # Press the buttons to play sounds!
-    if cpx.button_a:
-        cpx.play_file("drama.wav")
-    elif cpx.button_b:
-        cpx.play_file("low_fade.wav")
+    a = magnitude(dx, dy, dz)
+
+    if a > max_a[1]:
+        max_a = (now, a)
+    elif now - max_a[0] > 2.0:
+        max_a = (now, 0)
+
+    animate_level(a, max_a[1])
