@@ -17,26 +17,37 @@ cpx.pixels.brightness = 1.0
 cpx.pixels.auto_write = True
 
 
-def log_values(now, ax, ay, az, dx, dy, dz):
+def log_record(fp, r):
+    fp.write("%f,%f,%f,%f,%f,%f,%f\n" % (r[0], r[1], r[2], r[3], r[4], r[5], r[6]))
+
+def log_records(records):
     try:
         with open("/data.csv", "a") as fp:
-            # do the C-to-F conversion here if you would like
-            fp.write("%f,%f,%f,%f,%f,%f,%f\n" % (now, ax, ay, az, dx, dy, dz))
+            for record in records:
+                log_record(fp, record)
             fp.flush()
-            cpx.red_led = not cpx.red_led
-    except OSError as e:
-        delay = 1
-        if e.args[0] == 28:
-            delay = 2
-        while True:
-            cpx.red_led = not cpx.red_led
-            print(e)
-            time.sleep(delay)
+        
+        records = []
 
+    except OSError as e:
+        handle_error(e)
+
+def handle_error(e):
+    # default IO error is 1 second blink
+    delay = 1
+
+    # Error#28 is file system full error I think
+    if e.args[0] == 28:
+        delay = 2
+
+    # On error blink every X seconds
+    while True:
+        cpx.red_led = not cpx.red_led
+        print(e)
+        time.sleep(delay)
 
 def magnitude(ax, ay, az):
     return math.sqrt(ax * ax + ay * ay + az * az) / 9.802
-
 
 def light_level(a):
     level = 0
@@ -69,6 +80,10 @@ ax, ay, az = 0, 0, 0
 bx, by, bz = 0, 0, 0
 dx, dy, dz = 0, 0, 0
 max_a = (0, 0)
+
+log_buffer = []
+last_log_flush = 0
+
 # time.monotonic() allows for non-blocking LED animations!
 start = time.monotonic()
 while True:
@@ -84,7 +99,13 @@ while True:
 
     if not cpx.switch:
         cpx.red_led = not cpx.switch
-        log_values(now, ax, ay, az, dx, dy, dz)
+
+        log_buffer.append([now, ax, ay, az, dx, dy, dz])
+
+        if len(log_buffer) >= 10:
+            log_records(log_buffer)
+            log_buffer=[]
+            last_log_flush = now
 
     a = magnitude(dx, dy, dz)
 
